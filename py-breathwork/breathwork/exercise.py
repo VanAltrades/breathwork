@@ -1,6 +1,7 @@
 from tqdm import tqdm
 import time
 from texttable import Texttable
+# what improvements would you make to this class?
 
 class Exercise:
     def __init__(self, name, steps, info):

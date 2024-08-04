@@ -1,4 +1,4 @@
-from texttable import Texttable
+from texttable import Texttable  # type: ignore
 
 class Menu:
     def __init__(self, exercises):
