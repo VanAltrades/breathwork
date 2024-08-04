@@ -1,5 +1,7 @@
 using Toybox.System;
 using Toybox.WatchUi;
+using Toybox.Lang; // Add this import
+
 
 class Exercise {
     var name;
@@ -7,9 +9,9 @@ class Exercise {
     var description;
 
     function initialize(name, steps, description) {
-        self.name = name;
-        self.steps = steps;
-        self.description = description;
+        self.name = name as Lang.String;
+        self.steps = steps as Lang.Array;
+        self.description = description as Lang.String;
     }
 }
 

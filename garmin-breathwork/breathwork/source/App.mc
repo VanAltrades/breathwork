@@ -6,9 +6,11 @@ class App extends Application.AppBase {
         AppBase.initialize();
     }
 
-    function onStart() {
+    function onStart(state) {
+        AppBase.onStart(state);
+        
         var exercises = new Exercises();
         var menuView = new MenuView(exercises.exercises);
-        WatchUi.pushView(menuView, WatchUi.SLIDE_IMMEDIATE);
+        WatchUi.pushView(menuView, null, WatchUi.SLIDE_IMMEDIATE);
     }
 }

@@ -17,13 +17,12 @@ class MenuView extends WatchUi.Menu2 {
         return self.exercises.size();
     }
 
-    function getItem(index) {
+    function getItem(index as Lang.Number) {
         return self.exercises[index].name;
     }
 
-    function onSelect(index) {
+    function onSelect(index as Lang.Number) {
         var selectedExercise = self.exercises[index];
-        WatchUi.pushView(new ExerciseView(selectedExercise), WatchUi.SLIDE_IMMEDIATE);
-        // ERROR: fr245m: C:\Users\vanal\Desktop\repositories\breathwork\garmin-breathwork\breathwork\source\MenuView.mc:26,8: Trying to call function '$.Toybox.WatchUi.pushView' with wrong number of arguments.
+        WatchUi.pushView(new ExerciseView(selectedExercise), null, WatchUi.SLIDE_IMMEDIATE);
     }
 }
