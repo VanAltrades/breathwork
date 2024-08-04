@@ -40,49 +40,191 @@ Garmin watch application written in Monkey C . `./garmin-breathwork`
 
 ## Source Directory Structure
 
-The source directory contains the main source code for the breathing app. Below is a description of each file and its role in the application:
+To create a Garmin Connect IQ app that meets your requirements, you need to follow these steps:
 
-### Files
+1. **Define the Exercise Class**: This class will store the exercise details.
+2. **Create a Menu Screen**: This screen will list all the exercises.
+3. **Handle Exercise Selection**: Allow the user to select an exercise.
+4. **Run the Exercise**: Perform each action for the given duration in a loop until the user stops.
 
-`Exercise.mc`
+### Step-by-Step Plan:
 
-* Description: Defines the Exercise class, which represents a breathing exercise. This class likely includes properties and methods to manage the steps and duration of the exercise.
-* Interactions: Used by breathworkExerciseDelegate.mc to initialize and manage the current exercise.
+1. **Define the Exercise Class**:
+    - Store the name, steps, and description of each exercise.
 
-`breathworkApp.mc`
+2. **Create the Menu Screen**:
+    - Use a `Menu2` class to list all exercises.
+    - Handle user selection to navigate to the exercise screen.
 
-* Description: Contains the main application class for the breathing app. This class is responsible for initializing the app and managing its lifecycle.
-* Interactions: Initializes the app and sets up the main entry point. It may also interact with various delegates to manage different views and states of the app.
+3. **Handle Exercise Selection**:
+    - Pass the selected exercise to the exercise screen.
 
-`breathworkDelegate.mc`
+4. **Run the Exercise**:
+    - Display each action and wait for the specified duration.
+    - Allow the user to stop the exercise.
 
-* Description: Defines a delegate class that handles specific tasks or views within the app. This could be a base class for other delegates.
-* Interactions: May be extended by other delegate classes like breathworkExerciseDelegate.mc to provide common functionality.
+### Monkey C Code:
 
-`breathworkExerciseDelegate.mc`
+#### Exercise.mc
 
-* Description: Extends Ui.ViewLoopDelegate to manage the breathing exercise view. Handles the layout, user interactions, and exercise progression.
-* Interactions: Uses Exercise.mc to manage the current exercise and interacts with the UI components defined in the layout resources.
+```monkeyc
+using Toybox.System;
+using Toybox.WatchUi;
+using Toybox.Lang;
 
-`breathworkMenuDelegate.mc`
+class Exercise {
+    var name;
+    var steps;
+    var description;
 
-* Description: Manages the menu view of the app. Handles user interactions with the menu and navigation to other parts of the app.
-* Interactions: Interacts with the main app class (breathworkApp.mc) to navigate between different views and delegates.
+    function initialize(name, steps, description) {
+        self.name = name;
+        self.steps = steps;
+        self.description = description;
+    }
+}
 
-`breathworkView.mc`
+class Exercises {
+    var exercises;
 
-* Description: Defines custom views or UI components used in the app. This could include custom drawing or interaction logic for the breathing exercises.
-* Interactions: Used by breathworkExerciseDelegate.mc and other delegates to render custom UI components.
+    function initialize() {
+        self.exercises = [
+            self.createAnb(),
+            self.createBc()
+            // Add other exercises here
+        ];
+    }
 
-`developer_key`
+    function createAnb() {
+        return new Exercise(
+            "Alternate Nostril Breathing (Nadi Shodhana)",
+            [
+                {"action" => "Hold Thumb & Index Fingers to Nostrils", "duration" => 2},
+                {"action" => "Inhale LEFT Nostril", "duration" => 5},
+                {"action" => "Hold w/ BOTH Nostrils Closed", "duration" => 2},
+                {"action" => "Exhale RIGHT Nostril", "duration" => 5},
+                {"action" => "Hold w/ BOTH Nostrils Closed", "duration" => 2},
+                {"action" => "Inhale RIGHT Nostril", "duration" => 5},
+                {"action" => "Hold w/ BOTH Nostrils Closed", "duration" => 2},
+                {"action" => "Exhale LEFT Nostril", "duration" => 5}
+            ],
+            "Improves lung function, lowers heart rate, blood pressure, and stress."
+        );
+    }
 
-* Description: Contains the developer key required for app deployment and testing on Garmin devices.
-* Interactions: Used during the build and deployment process but not directly interacted with by the source code.
+    function createBc() {
+        return new Exercise(
+            "Breathing Coordination",
+            [
+                {"action" => "Inhale", "duration" => 5},
+                {"action" => "Exhale by counting up to 10 repeatedly. Soften to whisper until lungs empty.", "duration" => 20}
+            ],
+            "Engage diaphragm. Improve respiratory efficiency. Never forced - opt for calm. Spine should be straight. Chin perpendicular to body."
+        );
+    }
+}
+```
 
-### How The Files Interact
+#### MenuView.mc
 
-1. Initialization: The app starts with breathworkApp.mc, which initializes the main application and sets up the initial view or delegate.
-2. Menu Navigation: breathworkMenuDelegate.mc manages the menu view, allowing users to navigate to different parts of the app, such as starting a new exercise.
-3. Exercise Management: When a user starts a breathing exercise, breathworkExerciseDelegate.mc takes over. It uses Exercise.mc to manage the exercise steps and duration.
-4. UI Rendering: breathworkExerciseDelegate.mc and other delegates use breathworkView.mc to render custom UI components and handle user interactions.
-5. Lifecycle Management: Throughout the app's lifecycle, various delegates manage their respective views and states, ensuring a smooth user experience.
+```monkeyc
+using Toybox.WatchUi;
+using Toybox.Lang;
+
+class MenuView extends WatchUi.Menu2 {
+    var exercises;
+
+    function initialize(exercises) {
+        Menu2.initialize();
+        self.exercises = exercises;
+    }
+
+    function getItemCount() {
+        return self.exercises.size();
+    }
+
+    function getItem(index) {
+        return self.exercises[index].name;
+    }
+
+    function onSelect(index) {
+        var selectedExercise = self.exercises[index];
+        WatchUi.pushView(new ExerciseView(selectedExercise), WatchUi.SLIDE_IMMEDIATE);
+    }
+}
+```
+
+#### ExerciseView.mc
+
+```monkeyc
+using Toybox.WatchUi;
+using Toybox.System;
+using Toybox.Lang;
+
+class ExerciseView extends WatchUi.View {
+    var exercise;
+    var currentStepIndex;
+    var timer;
+
+    function initialize(exercise) {
+        View.initialize();
+        self.exercise = exercise;
+        self.currentStepIndex = 0;
+        self.timer = new Timer.Timer();
+    }
+
+    function onShow() {
+        self.runNextStep();
+    }
+
+    function runNextStep() {
+        if (self.currentStepIndex < self.exercise.steps.size()) {
+            var step = self.exercise.steps[self.currentStepIndex];
+            self.setText(step["action"]);
+            self.timer.start(step["duration"] * 1000, method(:onTimer));
+        } else {
+            self.setText("Exercise Complete");
+        }
+    }
+
+    function onTimer() {
+        self.currentStepIndex += 1;
+        self.runNextStep();
+    }
+
+    function onHide() {
+        self.timer.stop();
+    }
+
+    function setText(text) {
+        // Implement this method to update the display with the given text
+    }
+}
+```
+
+#### App.mc
+
+```monkeyc
+using Toybox.Application;
+using Toybox.WatchUi;
+
+class App extends Application.AppBase {
+    function initialize() {
+        AppBase.initialize();
+    }
+
+    function onStart() {
+        var exercises = new Exercises();
+        var menuView = new MenuView(exercises.exercises);
+        WatchUi.pushView(menuView, WatchUi.SLIDE_IMMEDIATE);
+    }
+}
+```
+
+### Explanation:
+
+1. **Exercise Class**: Stores the name, steps, and description of each exercise.
+2. **Exercises Class**: Initializes a list of exercises.
+3. **MenuView Class**: Displays a list of exercises and handles user selection.
+4. **ExerciseView Class**: Runs the selected exercise, displaying each action for the specified duration.
+5. **App Class**: Initializes the app and displays the menu view.
